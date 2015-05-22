@@ -9,3 +9,7 @@ class OvnController(FaSdnController):
 
     def test(self):
         print "test\n"
+
+    @set_ev_cls(RegisterVNIDReq, MAIN_DISPATCHER)
+    def register_vnid_handler(self, req):
+        print "test2\n"
