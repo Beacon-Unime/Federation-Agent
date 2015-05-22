@@ -12,4 +12,7 @@ except ImportError:
 
 setuptools.setup(
     setup_requires=['pbr'],
+    install_requires=[
+          'ryu', 'requests', 'simplejson', 'jsonschema'
+      ],
     pbr=True)
