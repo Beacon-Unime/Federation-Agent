@@ -1,4 +1,4 @@
-from ryu.app.fa_sdn_controller import FaSdnController
+from netfa.fa_sdn_controller import FaSdnController
 
 class OvnController(FaSdnController):
     def initialize(self):

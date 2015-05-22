@@ -28,9 +28,8 @@ from ryu.app.rest_router import ( ip_addr_aton,
                                   ipv4_text_to_int,
                                   nw_addr_aton,
                                   ip_addr_aton )
-from ryu.app import fa_sdn_controller
-from ryu.app.fa_sdn_controller import FaSdnController
-from ryu.app import dcs
+from netfa.fa_sdn_controller import *
+from netfa.fa_sdn_controller import FaSdnController
 from jsonschema import validate
 
 dove_fa_api_instance_name = 'dove_fa_api_app'
@@ -63,7 +62,7 @@ class DoveFaSwitch(app_manager.RyuApp):
         self.CONF.register_opts([
             cfg.StrOpt('dmc_url', default='127.0.0.1'),
             cfg.StrOpt('my_site', default='site1'),
-            cfg.StrOpt('controller_driver', default='ryu.app.fa_ovn_controller')
+            cfg.StrOpt('controller_driver', default='netfa.fa_ovn_controller')
         ])
 
         self.load_controller()
@@ -238,7 +237,7 @@ class DoveFaSwitch(app_manager.RyuApp):
                 actions=actions
                 )
 
-    @set_ev_cls(fa_sdn_controller.LocationReq)
+    @set_ev_cls(LocationReq)
     def loc_query_handler(self, ev):
         vnid = ev.vNID
         vip = ev.vIP
@@ -770,7 +769,7 @@ class DoveFaApi(ControllerBase):
         logging.debug('Enter location_request with %s', msg)
 
         # send location request to controller
-        reply = self.dove_switch_app.send_request(fa_sdn_controller.LocationReq(msg['vnid'], str(msg['vip'])))
+        reply = self.dove_switch_app.send_request(LocationReq(msg['vnid'], str(msg['vip'])))
 
         # XXX return error code
         if reply.vIP == "0.0.0.0":

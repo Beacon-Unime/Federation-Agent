@@ -1,0 +1,4 @@
+*~
+build/
+net_fa.egg-info/
+*.pyc
