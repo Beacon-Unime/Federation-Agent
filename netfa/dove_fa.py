@@ -581,8 +581,7 @@ class DoveFaApi(ControllerBase):
                                    "tunnel_type" : msg['tunnel_type']
                                    }
             return
-
-        raise RyuException("FA handshake failed %s" % r.txt)
+        raise RyuException("FA handshake failed %s" % r.text)
 
     def sites_handshake(self, tenant_id):
         version = tenants_net_tables[tenant_id]['version']
@@ -699,8 +698,8 @@ class DoveFaApi(ControllerBase):
 
         try:
             self.sites_handshake(tenant_id)
-        except RyuException:
-            return Response(content_type='application/json',status = 500)
+        except RyuException, e:
+            return Response(content_type='application/json', body=str(e), status = 500)
 
         body = json.dumps(table)
         return Response(content_type='application/json', body=body)

@@ -4,6 +4,7 @@ from keystoneclient.v2_0 import client as kclient
 from requests.auth import HTTPBasicAuth
 import requests
 import json
+import time
 
 username='admin'
 password='password'
@@ -13,7 +14,7 @@ site2='10.0.2.6'
 auth_url1='http://' + site1 + ':5000/v2.0'
 auth_url2='http://' + site2 + ':5000/v2.0'
 fa_url1='10.0.2.8:4567'
-fa_url2='10.0.2.6:4567'
+fa_url2='10.0.2.9:4567'
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,7 +40,7 @@ auth = HTTPBasicAuth(username, password)
 headers = {'content-type': 'application/json', 'Accept': 'application/json', 'charsets': 'utf-8'}
 
 r = requests.post('http://' + fa_url1 + '/dove-fa/tenants', headers=headers, auth=auth, data=json.dumps(tenant1))
-#r = requests.post('http://' + site2 + ':4567/dove-fa/tenants', headers=headers, auth=auth, data=json.dumps(tenant2))
+r = requests.post('http://' + fa_url2 + '/dove-fa/tenants', headers=headers, auth=auth, data=json.dumps(tenant2))
 
 print "Create tenant sites table\n"
 sites = []
@@ -50,14 +51,14 @@ site = { 'name' : 'site1',
          }
 sites.append(site)
 site = { 'name' : 'site2',
-         'tenant_id' : tenant1['id'],
+         'tenant_id' : tenant2['id'],
          'fa_url' : fa_url2,
          'site_proxy' : [{'ip' : '10.0.2.6', 'port' : 1234}]
          }
 sites.append(site)
 print "Update tenant's site table %s\n" % sites
 r = requests.put('http://' + fa_url1 + '/dove-fa/tenants/' + tenant1['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
-#r = requests.put('http://' + site2 + ':4567/dove-fa/tenants/' + tenant2['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
+r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
 
 print 'Create network table id are strings\n'
 net_table=[]
@@ -89,6 +90,9 @@ for n1 in networks1['networks']:
     if net:
         net_table.append(net)
 
-print "Update net table on sites \n"
+print "Update net table on sites:\n %s" % net_table
 r = requests.put('http://' + fa_url1 + '/dove-fa/tenants/' + tenant1['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table} ))
-#r = requests.put('http://' + site2 + ':4567/dove-fa/tenants/' + tenant2['id'] + '/network_table', headers=headers, auth=auth, data=json.dumps(net_table))
+
+time.sleep(1)
+
+r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table}))
