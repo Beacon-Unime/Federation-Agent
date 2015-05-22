@@ -1,4 +1,7 @@
 from netfa.fa_sdn_controller import FaSdnController
+from netfa.fa_sdn_controller import RegisterVNIDReq
+from ryu.controller.handler import MAIN_DISPATCHER
+from ryu.controller.handler import set_ev_cls
 
 class OvnController(FaSdnController):
     def initialize(self):
