@@ -76,13 +76,13 @@ for n1 in networks1['networks']:
             print 'we have a match %s\n' % n1
             net.append({ 'name' : n1['name'],
                          'vnid' : n1['id'],
-                         'site_name' : site1,
+                         'site_name' : "site1",
                          'tenant_id' : tenant1['id']
                          }
                        )
             net.append({ 'name' : n2['name'],
                          'vnid' : n2['id'],
-                         'site_name' : site2,
+                         'site_name' : "site2",
                          'tenant_id' : tenant2['id']
                          }
                        )
@@ -93,9 +93,13 @@ for n1 in networks1['networks']:
 print "Update net table on sites:\n %s" % net_table
 r = requests.put('http://' + fa_url1 + '/dove-fa/tenants/' + tenant1['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table} ))
 
-print "Update net table returned %s %s\n" %(r.statuc_code(), r.text)
+print "Update net table returned %s %s\n" %(r.status_code, r.text)
 time.sleep(1)
 
 r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table}))
 
-print "Second attempt update net table returned %s %s\n" %(r.statuc_code(), r.text)
+print "Second attempt update net table returned %s %s\n" %(r.status_code, r.text)
+
+r = requests.get('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table')
+
+print "Configured net table:\n %s" % r.text
