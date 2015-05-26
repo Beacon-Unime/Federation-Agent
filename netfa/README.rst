@@ -47,6 +47,7 @@ Linux distribution with kernel>=3.18 (Geneve support)
 Quick Start
 ===========
 % git clone <net-fa Git repository>
+% git checkout netfa
 % cd net-fa; python ./setup.py install
 # OR: % cd net-fa; python ./setup.py develop 
 
