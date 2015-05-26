@@ -11,12 +11,6 @@ from ryu.controller.event import EventRequestBase, EventReplyBase
 
 controllerName = None
 
-class EventPolicyReq(EventRequestBase):
-    def __init__(self, vNID, vIP):
-        self.dst = 'FaSdnController'
-        self.vNID = vNID
-        self.vIP = vIP
-
 class EventRegisterVNIDReq(EventRequestBase):
     def __init__(self, vNID, pIP):
         super(EventRegisterVNIDReq, self).__init__()
@@ -32,21 +26,21 @@ class EventRegisterVNIDReply(EventReplyBase):
         self.pIP = pIP
         self.port = port
 
-class EventLocUpdateReq(EventRequestBase):
-    def __init__(self, pIP, vNID, vIP, vMAC):
+class EventUpdateHostedMacs(EventRequestBase):
+    def __init__(self, vNID, vMAC_list):
         self.vNID = vNID
         self.vIP = vIP
-        self.pIP = pIP
-        self.vMAC = vMAC
+        self.vMAC_list = vMAC_list
 
-class EventLocationReq(EventRequestBase):
-    def __init__(self, vNID, vIP):
-        self.dst = 'FaSdnController'
-        self.vNID = vNID
-        self.vIP = vIP
+class EventUpdateLocalHostedMacs(EventUpdateHostedMacs):
+    def __init__(self, vNID, vMAC_list):
+        super(EventUpdateHostedMacs, self).__init__(vNID, vMAC_list)
+
+class EventUpdateRemoteHostedMacs(EventUpdateHostedMacs):
+    def __init__(self, vNID, vMAC_list):
+        super(EventUpdateHostedMacs, self).__init__(vNID, vMAC_list)
 
 _app = None
-
 
 class FaSdnController(app_manager.RyuApp):
     _EVENTS=[EventRegisterVNIDReq]
@@ -82,14 +76,25 @@ class FaSdnController(app_manager.RyuApp):
 
         self.reply_to_request(req, EventRegisterVNIDReply(req.src, req.vNID, req.pIP, port))
 
-    """ API to communicate with the specific cloud controller """
+    """ API to communicate with the specific network controller """
 
-    """ Returns the class name """
+    """ (Mandatory) Returns the class name """
     @abstractmethod
     def get_module_name():
         pass
 
-    """ Controler specific virtual network registration returns name of created VNID port on FA bridge"""
+    """ (Mandatory) Controler specific virtual network registration.
+    After this call it is assumed that vnid is L2 bridged to the FA bridge.
+    return: name of created VNID port on FA bridge """
     @abstractmethod
     def register_vnid(self, EventRegisterVNIDReq):
+        pass
+
+    """ (Optional) update remote hosted macs peered by FA """
+    @abstractmethod
+    def update_hosted_macs_by_peers(self, EventUpdateRemoteHostedMacs):
+        pass
+    """ (Optional) update local hosted macs """
+    @abstractmethod
+    def update_hosted_macs_by_local(self, EventUpdateLocalHostedMacs):
         pass

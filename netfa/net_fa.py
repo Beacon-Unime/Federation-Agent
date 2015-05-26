@@ -32,8 +32,6 @@ from ryu.app.rest_router import ( ip_addr_aton,
                                   ip_addr_aton )
 from netfa.fa_sdn_controller import EventRegisterVNIDReq
 from netfa.fa_sdn_controller import EventRegisterVNIDReply
-from netfa.fa_sdn_controller import EventLocationReq
-from netfa.fa_sdn_controller import EventLocUpdateReq
 from netfa.fa_sdn_controller import FaSdnController
 from jsonschema import validate
 
@@ -172,7 +170,7 @@ class NetFaSwitch(app_manager.RyuApp):
                 actions=actions
                 )
 
-    @set_ev_cls(EventLocationReq)
+#    @set_ev_cls(EventLocationReq)
     def loc_query_handler(self, ev):
         vnid = ev.vNID
         vip = ev.vIP
