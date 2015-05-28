@@ -16,7 +16,7 @@ class OvnController(FaSdnController):
         super(OvnController, self).__init__(*args, **kwargs)
         self.vsctl = ovs_vsctl.VSCtl('unix:/usr/local/var/run/openvswitch/db.sock')
         self.CONF.register_opts([
-            cfg.StrOpt('ovsdb_connection', default=None)], 'netfa')
+            cfg.StrOpt('ovsdb_connection', default=None)], 'ovn')
 
     def get_module_name(self):
         return 'OvnController'
@@ -30,9 +30,9 @@ class OvnController(FaSdnController):
 
         # add port to ovnnb
         os.system('ovn-nbctl -d %s lport-add neutron-%s %s' %
-                  (self.CONF.netfa.ovsdb_connection, req.vNID, vnid_ctl_port_uuid))
+                  (self.CONF.ovn.ovsdb_connection, req.vNID, vnid_ctl_port_uuid))
         os.system('ovn-nbctl -d %s lport-set-macs %s unknown' %
-                  (self.CONF.netfa.ovsdb_connection, vnid_ctl_port_uuid))
+                  (self.CONF.ovn.ovsdb_connection, vnid_ctl_port_uuid))
         logging.info('OVN -- Added logical port %s to switch neutron-%s\n',
                      vnid_ctl_port_uuid, req.vNID)
         
