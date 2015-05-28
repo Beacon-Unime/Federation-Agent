@@ -51,8 +51,11 @@ Quick Start
 % cd net-fa; python ./setup.py install
 # OR: % cd net-fa; python ./setup.py develop 
 
-If you run over OVN you will need to run setup-ovs.sh:
-    % sudo setup-ovs.sh <host_ip> <ovn_db_ip>
+# To setup FA ovs datapath:
+% sudo setup-fa-ovs.sh <host_ip>
+
+# If you run over OVN you will need to run setup-ovn.sh:
+% sudo setup-ovn.sh <host_ip> <ovn_db_ip>
 
 Copy and edit netfa.conf file:
 % cp netfa.conf.sample netfa.conf
