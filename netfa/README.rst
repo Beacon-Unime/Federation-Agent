@@ -4,7 +4,7 @@ Net-fa is a Ryu based application that implements federation agent OF
 controller.
 
 Net-fa is a generic SDN federation agent that exposes REST management and 
-control API to the Cloud Management Software and between network dederation 
+control API to the Cloud Management Software and between network federation 
 agents peers.
 In order to support a specific SDN implementation, one should write its own 
 FaController class that is derived from the abstract FaSdnController class.
