@@ -3,6 +3,8 @@ my_site=site2
 fa_br_name=br-fa
 fa_tun_name=fa-tun
 controller_br_name=br-int
+
+[ovn]
 ovsdb_connection=tcp:10.0.2.6:6640
 
 [mgmt]
