@@ -486,7 +486,7 @@ class DoveFaApi(ControllerBase):
             print "sleep"
             hub.sleep(self.VNID_REGISTER_INTERVAL)
             for table in tenants_net_tables.values():
-                print table
+
                 self._register_networks(table)
 
 #lookup for tenant ID translation for corresponding site
@@ -515,6 +515,7 @@ class DoveFaApi(ControllerBase):
 
         for net_list in net_table['table']:
             for site_net_attr in net_list:
+
                 if site_net_attr['site_name'] == self.my_site:
                     table['table'].update({ site_net_attr['vnid'] : net_list })
                     break
@@ -525,7 +526,7 @@ class DoveFaApi(ControllerBase):
         pip = self.dove_switch_app.switch['datapath'].address[0]
 
         for vnid in table['table']:
-            print "Register %d in controller\n" % vnid
+            print "Register %s in controller\n" % vnid
             self.dove_switch_app.send_event('SdnFaController', FaSdnController.RegisterVNIDReq(vnid, pip))
 
     def _validate_datapath(self):
