@@ -417,7 +417,7 @@ handshake_schema = { "type" : "object",
                               "type" : "string",
                               },
                           "tenant_id" : {
-                              "type" : "integer",
+                              "type" : "string",
                               },
                           "tunnel_ip" : {
                               "type" : "string",
@@ -582,7 +582,7 @@ class DoveFaApi(ControllerBase):
                                    }
             return
 
-        raise RyuException("FA handshake failed")
+        raise RyuException("FA handshake failed %s" % r.txt)
 
     def sites_handshake(self, tenant_id):
         version = tenants_net_tables[tenant_id]['version']
@@ -681,11 +681,12 @@ class DoveFaApi(ControllerBase):
     @route('dove-fa', url_tenants + '/{tenant_id}/networks_table',
            methods=['PUT'], requirements= {'tenant_id' : TENANTID_PATTERN })
     def update_net_table(self, req, tenant_id, **kwargs):
-        print "HERE"
+
         if tenant_id in tenants_net_tables:
             net_table = tenants_net_tables[tenant_id]
         else:
             return Response(content_type='application/json',status = 500)
+
         table = json.loads(req.body)
         validate(table, net_table_schema)
 
