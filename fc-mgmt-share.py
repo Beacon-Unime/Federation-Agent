@@ -93,6 +93,9 @@ for n1 in networks1['networks']:
 print "Update net table on sites:\n %s" % net_table
 r = requests.put('http://' + fa_url1 + '/dove-fa/tenants/' + tenant1['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table} ))
 
+print "Update net table returned %s %s\n" %(r.statuc_code(), r.text)
 time.sleep(1)
 
 r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table}))
+
+print "Second attempt update net table returned %s %s\n" %(r.statuc_code(), r.text)
