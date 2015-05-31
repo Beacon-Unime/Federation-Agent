@@ -28,7 +28,9 @@ from ryu.app.rest_router import ( ip_addr_aton,
                                   ipv4_text_to_int,
                                   nw_addr_aton,
                                   ip_addr_aton )
-from netfa.fa_sdn_controller import *
+from netfa.fa_sdn_controller import EventRegisterVNIDReq
+from netfa.fa_sdn_controller import EventLocationReq
+from netfa.fa_sdn_controller import EventLocUpdateReq
 from netfa.fa_sdn_controller import FaSdnController
 from jsonschema import validate
 
@@ -42,16 +44,7 @@ class DoveFaSwitch(app_manager.RyuApp):
 
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION, ofproto_v1_2]
     _CONTEXTS = { 'wsgi': WSGIApplication }
-
-    def load_controller(self):
-        mod = utils.import_module(self.CONF.controller_driver)
-        clses = inspect.getmembers(mod, lambda cls: (inspect.isclass(cls) and
-                                                     issubclass(cls, FaSdnController)))
-        if clses:
-            for cls in clses:
-                if cls[0] != 'FaSdnController':
-                    self.controller = cls[1]()
-                    return
+    _EVENTS=[EventRegisterVNIDReq]
 
     def __init__(self, *args, **kwargs):
         super(DoveFaSwitch, self).__init__(*args, **kwargs)
@@ -62,13 +55,7 @@ class DoveFaSwitch(app_manager.RyuApp):
         self.CONF.register_opts([
             cfg.StrOpt('dmc_url', default='127.0.0.1'),
             cfg.StrOpt('my_site', default='site1'),
-            cfg.StrOpt('controller_driver', default='netfa.fa_ovn_controller')
-        ])
-
-        self.load_controller()
-        print self.controller.test()
-        self.controller.initialize()
-
+            ])
 
 #     def rest_client(self, switch):
 #         print ("Enter rest %s" % switch)
@@ -190,7 +177,7 @@ class DoveFaSwitch(app_manager.RyuApp):
             dp = self.switch['datapath']
 
             # send to SDN controller location update
-            self.send_event('FaSdnController', FaSdnController.LocUpdateReq(pip, reply['vnid'], str(reply['vip']), str(reply['vmac'])))
+            self.send_event('FaSdnController', EventLocUpdateReq(pip, reply['vnid'], str(reply['vip']), str(reply['vmac'])))
 
             # Set outgoing flow in the datapath
             dp = self.switch['datapath']
@@ -237,7 +224,7 @@ class DoveFaSwitch(app_manager.RyuApp):
                 actions=actions
                 )
 
-    @set_ev_cls(LocationReq)
+    @set_ev_cls(EventLocationReq)
     def loc_query_handler(self, ev):
         vnid = ev.vNID
         vip = ev.vIP
@@ -527,7 +514,7 @@ class DoveFaApi(ControllerBase):
 
         for vnid in table['table']:
             print "Register %s in controller\n" % vnid
-            self.dove_switch_app.send_event('SdnFaController', FaSdnController.RegisterVNIDReq(vnid, pip))
+            self.dove_switch_app.send_event('OvnController', EventRegisterVNIDReq(vnid, pip))
 
     def _validate_datapath(self):
         if not self.dove_switch_app.switch:
@@ -770,7 +757,7 @@ class DoveFaApi(ControllerBase):
         logging.debug('Enter location_request with %s', msg)
 
         # send location request to controller
-        reply = self.dove_switch_app.send_request(LocationReq(msg['vnid'], str(msg['vip'])))
+        reply = self.dove_switch_app.send_request(EventLocationReq(msg['vnid'], str(msg['vip'])))
 
         # XXX return error code
         if reply.vIP == "0.0.0.0":
