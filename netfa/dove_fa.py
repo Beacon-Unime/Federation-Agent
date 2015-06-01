@@ -251,7 +251,7 @@ class DoveFaSwitch(app_manager.RyuApp):
     def nx_packet_in_handler(self, ev):
         packet = Packet(ev.msg.data.frame[2:])
 
-        logging.info("Packet in arrived %s-->%s- no flow in datapath" % (packet[1].src, packet[1].dst))
+        logging.info("Packet in arrived - no flow in datapath")
 
         return
         #raise RyuException("Packet in arrived %s-->%s- no flow in datapath" % (packet[1].src, packet[1].dst))
