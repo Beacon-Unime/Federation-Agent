@@ -607,7 +607,7 @@ class DoveFaApi(ControllerBase):
         if not self.dove_switch_app.switch:
             raise RyuException("FA handshake failed: No datapath")
 
-    def _process_handshake_req(self, site, msg):
+    def _process_handshake_req(self, site, tenant_id, msg):
         reply = msg.copy()
         reply['src_site'] = self.my_site
         reply['tenant_id'] = site['tenant_id']
@@ -622,6 +622,8 @@ class DoveFaApi(ControllerBase):
             site['tunnel_attr'] = {"tunnel_ip" : msg['tunnel_ip'],
                                    "tunnel_type" : msg['tunnel_type']
                                    }
+            self._register_networks(tenants_net_tables[tenant_id])
+            
             return (200, reply)
         else:
             return (500, "Unknown Error")
@@ -828,7 +830,7 @@ class DoveFaApi(ControllerBase):
         for site in tenants_site_tables[tenant_id]:
             if site['name'] == msg['src_site']:
 
-                status, body = self._process_handshake_req(site, msg)
+                status, body = self._process_handshake_req(site, tenant_id, msg)
 
                 body = json.dumps(body)
                 return Response(content_type='application/json', body=body)
