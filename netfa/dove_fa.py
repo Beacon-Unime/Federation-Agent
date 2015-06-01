@@ -622,7 +622,7 @@ class DoveFaApi(ControllerBase):
             site['tunnel_attr'] = {"tunnel_ip" : msg['tunnel_ip'],
                                    "tunnel_type" : msg['tunnel_type']
                                    }
-            self._register_networks(tenants_net_tables[tenant_id])
+            self._register_networks(tenants_net_tables[tenant_id], tenant_id)
             
             return (200, reply)
         else:
