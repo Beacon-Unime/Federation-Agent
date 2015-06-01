@@ -26,6 +26,7 @@ class EventRegisterVNIDReq(EventRequestBase):
 class EventRegisterVNIDReply(EventReplyBase):
     def __init__(self, dst, vNID, pIP, port):
         super(EventRegisterVNIDReply, self).__init__(dst)
+        self.dst = dst
         self.vNID = vNID
         self.pIP = pIP
         self.port = port
@@ -78,9 +79,10 @@ class FaSdnController(app_manager.RyuApp):
     @set_ev_cls(EventRegisterVNIDReq)
     def register_vnid_handler(self, req):
         print "Register vnid %s\n" % req.vNID
-        self.register_vnid(req)
-
-        self.reply_to_request(req, EventRegisterVNIDReply(req.src, req.vNID, req.pIP, None))
+        port = self.register_vnid(req)
+        print "send reply with %s\n" % port
+        
+        self.reply_to_request(req, EventRegisterVNIDReply(req.src, req.vNID, req.pIP, port))
 
     """ API to communicate with the specific cloud controller """
 
@@ -89,7 +91,7 @@ class FaSdnController(app_manager.RyuApp):
     def get_module_name():
         pass
 
-    """ Controler specific virtual network registration """
+    """ Controler specific virtual network registration returns name of created VNID port on FA bridge"""
     @abstractmethod
     def regiter_vnid(self, EventRegisterVNIDReq):
         pass

@@ -2,6 +2,7 @@ import json
 import logging
 import requests
 import inspect
+import hashlib
 
 from ryu.base import app_manager
 from webob import Response
@@ -20,6 +21,7 @@ from ryu import cfg
 from ryu import utils
 from ryu.lib.packet.packet import Packet
 from ryu.ofproto import nx_match
+import ryu.lib.ovs.vsctl as ovs_vsctl
 from ryu.app.rest_router import ( ip_addr_aton,
                                   ip_addr_ntoa,
                                   mask_ntob,
@@ -29,6 +31,7 @@ from ryu.app.rest_router import ( ip_addr_aton,
                                   nw_addr_aton,
                                   ip_addr_aton )
 from netfa.fa_sdn_controller import EventRegisterVNIDReq
+from netfa.fa_sdn_controller import EventRegisterVNIDReply
 from netfa.fa_sdn_controller import EventLocationReq
 from netfa.fa_sdn_controller import EventLocUpdateReq
 from netfa.fa_sdn_controller import FaSdnController
@@ -48,12 +51,13 @@ class DoveFaSwitch(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(DoveFaSwitch, self).__init__(*args, **kwargs)
         self.switch = {}
-        #hub.spawn(self.rest_client, self)
+        self.vsctl = ovs_vsctl.VSCtl('unix:/usr/local/var/run/openvswitch/db.sock')
         wsgi = kwargs['wsgi']
         wsgi.register(DoveFaApi, {dove_fa_api_instance_name : self})
         self.CONF.register_opts([
             cfg.StrOpt('my_site', default='site1'),
-            cfg.StrOpt('fa_br_name', default='br-fa')
+            cfg.StrOpt('fa_br_name', default='br-fa'),
+            cfg.StrOpt('fa_tun_name', default='fa-tun')
             ])
 
 #     def rest_client(self, switch):
@@ -138,10 +142,12 @@ class DoveFaSwitch(app_manager.RyuApp):
             if port.name == self.CONF.fa_br_name:
                 # We found our datapath
                 print "Found %s\n" % port.name
-                self.tunnel_port = port
                 self.switch = {'datapath': datapath}
-                break
-            
+            if port.name == self.CONF.fa_tun_name:
+                # We found our fa tunnel port
+                print "Found %s tunnel\n" % port.name
+                self.tunnel_port = port
+
         if not self.switch:
             raise RyuException("No DOVE FA bridge yet")
 
@@ -485,13 +491,13 @@ class DoveFaApi(ControllerBase):
         raise RyuException("Tenant translation failed")
 
 #lookup for network ID translation for specific VN ID
-    def _site_network(self, site_name, network_id):
+    def _site_network(self, site_name, tenant_id, network_id):
         if tenant_id in tenants_net_tables:
             net_table = tenants_net_tables[tenant_id]
             net_list =  net_table['table'][network_id]
             for site_net_attr in net_list:
                 if site_net_attr['site_name'] == site_name:
-                    return site_net_attr['net_id']
+                    return site_net_attr['vnid']
 
         raise RyuException("Network translation failed")
 
@@ -508,14 +514,92 @@ class DoveFaApi(ControllerBase):
 
         return table
 
-    def _register_networks(self, table):
+    def _vnid_uuid_to_vnid(self, uuid):
+        return int(hashlib.sha1(uuid).hexdigest(), 16) % (1<<23)
+
+    def _add_flows_for_vnid(self, tenant_id, vnid, port):
+        dp = self.dove_switch_app.switch['datapath']
+        ofproto = dp.ofproto
+        tunnel_port = self.dove_switch_app.tunnel_port
+        parser = dp.ofproto_parser
+
+        # outgoing flow
+        actions = []
+        rule = nx_match.ClsRule()
+
+        # hardware
+        command = ovs_vsctl.VSCtlCommand('get', ('Interface', port, 'ofport'))
+        self.dove_switch_app.vsctl.run_command([command])
+
+        assert len(command.result) == 1
+        ofport = command.result[0][0]
+        
+        rule.set_in_port(ofport)
+
+        for site in tenants_site_tables[tenant_id]:
+            print "Set flow for ip %s\n" % site['site_proxy'][0]['ip']
+            if site['name'] != self.my_site:
+                print "append %s\n" % self._vnid_uuid_to_vnid(self._site_network(site['name'], tenant_id, vnid))
+                # set tunnel key       SET_TUNNEL
+                actions.append(dp.ofproto_parser.NXActionSetTunnel(self._vnid_uuid_to_vnid(self._site_network(site['name'], tenant_id, vnid))))
+                # set tunnel dst pIP   REG_LOAD
+                actions.append(dp.ofproto_parser.NXActionRegLoad(
+                    0x1f,        # ofs_nbits (ofs < 6 | nbits - 1)
+                    0x014004,    # dst
+                    ipv4_text_to_int(str(site['site_proxy'][0]['ip']))
+                    ))
+
+                # forward              OUTPUT(PROXY)
+                actions.append(dp.ofproto_parser.OFPActionOutput(tunnel_port.port_no))
+                logging.debug('Installing outgoing flow for %s=>%s',
+                              self._vnid_uuid_to_vnid(self._site_network(site['name'], tenant_id, vnid)),
+                              site['site_proxy'][0]['ip'])
+
+        res= dp.send_flow_mod(
+            rule=rule,
+            cookie=0,
+            command=ofproto.OFPFC_ADD,
+            idle_timeout=0,
+            hard_timeout=0,
+            actions=actions
+            )
+        print "result %s\n" % res
+
+        # ingoing flow
+        actions = []
+        rule = nx_match.ClsRule()
+
+        rule.set_in_port(tunnel_port.port_no)
+        rule.set_tun_id(self._vnid_uuid_to_vnid(vnid))
+        
+        # forward              OUTPUT(PROXY)
+        actions.append(dp.ofproto_parser.OFPActionOutput(ofport))
+        logging.debug('Installing incoming flow for %s=>%sofport', vnid, ofport)
+
+        res= dp.send_flow_mod(
+            rule=rule,
+            cookie=0,
+            command=ofproto.OFPFC_ADD,
+            idle_timeout=0,
+            hard_timeout=0,
+            actions=actions
+            )
+        print "result %s\n" % res
+
+    def _register_networks(self, table, tenant_id):
         pip = self.dove_switch_app.switch['datapath'].address[0]
 
         for vnid in table['table']:
             print "Register %s in controller\n" % vnid
             rep = self.dove_switch_app.send_request(EventRegisterVNIDReq(vnid, pip))
 
-            print "register vnid return %s\n" % rep
+            print "Got reply PPPP %s port %s\n" % (rep,rep.port)
+
+            if rep.port:
+                print "register vnid return %s\n" % rep
+                self._add_flows_for_vnid(tenant_id, vnid, rep.port)
+            else:
+                raise RyuException("Error failed to create port for vnid %s\n" % vnid)
 
     def _validate_datapath(self):
         if not self.dove_switch_app.switch:
@@ -682,7 +766,6 @@ class DoveFaApi(ControllerBase):
 
         table = self._process_net_table(table)
 
-        self._register_networks(table)
         tenants_net_tables[tenant_id] = table
 
         try:
@@ -690,6 +773,8 @@ class DoveFaApi(ControllerBase):
         except RyuException, e:
             return Response(content_type='application/json', body=str(e), status = 500)
 
+        self._register_networks(table, tenant_id)
+        
         body = json.dumps(table)
         return Response(content_type='application/json', body=body)
 

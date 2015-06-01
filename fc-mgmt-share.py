@@ -1,4 +1,3 @@
-import logging
 from neutronclient.neutron import client as nclient
 from keystoneclient.v2_0 import client as kclient
 from requests.auth import HTTPBasicAuth
@@ -15,8 +14,6 @@ auth_url1='http://' + site1 + ':5000/v2.0'
 auth_url2='http://' + site2 + ':5000/v2.0'
 fa_url1='10.0.2.8:4567'
 fa_url2='10.0.2.9:4567'
-
-logging.basicConfig(level=logging.INFO)
 
 def get_tenant(auth_url):
     keystone = kclient.Client(username=username, password=password, tenant_name=tenant_name, auth_url=auth_url)
@@ -97,8 +94,6 @@ print "Update net table returned %s %s\n" %(r.status_code, r.text)
 time.sleep(1)
 
 r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table}))
-
-print "Second attempt update net table returned %s %s\n" %(r.status_code, r.text)
 
 r = requests.get('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table')
 
