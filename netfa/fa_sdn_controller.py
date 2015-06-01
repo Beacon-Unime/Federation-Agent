@@ -74,11 +74,6 @@ class FaSdnController(app_manager.RyuApp):
                 self.tunnel_port = port
                 self.fa_switch = {'datapath': datapath}
                 break
-            if port.name == self.CONF.controller_br_name:
-                print "Found in controller fa bridge %s\n" % port.name
-                self.tunnel_port = port
-                self.ctl_switch = {'datapath': datapath}
-                break
 
     @set_ev_cls(EventRegisterVNIDReq)
     def register_vnid_handler(self, req):
