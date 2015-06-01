@@ -10,5 +10,8 @@ class OvnController(FaSdnController):
     def __init__(self, *args, **kwargs):
         super(OvnController, self).__init__(*args, **kwargs)
 
+    def get_module_name(self):
+        return 'OvnController'
+
     def register_vnid(self, req):
         print "test2 %s\n" % req

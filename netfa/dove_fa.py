@@ -38,7 +38,6 @@ dove_fa_api_instance_name = 'dove_fa_api_app'
 url_tenants = '/dove-fa/tenants'
 
 TENANTID_PATTERN = r'[0-9a-f]{32}'
-FA_BR_NAME = 'br-fa'
 
 class DoveFaSwitch(app_manager.RyuApp):
 
@@ -53,8 +52,8 @@ class DoveFaSwitch(app_manager.RyuApp):
         wsgi = kwargs['wsgi']
         wsgi.register(DoveFaApi, {dove_fa_api_instance_name : self})
         self.CONF.register_opts([
-            cfg.StrOpt('dmc_url', default='127.0.0.1'),
             cfg.StrOpt('my_site', default='site1'),
+            cfg.StrOpt('fa_br_name', default='br-fa')
             ])
 
 #     def rest_client(self, switch):
@@ -136,7 +135,7 @@ class DoveFaSwitch(app_manager.RyuApp):
         print ev.msg
         print datapath
         for port_no,port in ev.msg.ports.items():
-            if port.name == FA_BR_NAME:
+            if port.name == self.CONF.fa_br_name:
                 # We found our datapath
                 print "Found %s\n" % port.name
                 self.tunnel_port = port
@@ -514,7 +513,9 @@ class DoveFaApi(ControllerBase):
 
         for vnid in table['table']:
             print "Register %s in controller\n" % vnid
-            self.dove_switch_app.send_event('OvnController', EventRegisterVNIDReq(vnid, pip))
+            rep = self.dove_switch_app.send_request(EventRegisterVNIDReq(vnid, pip))
+
+            print "register vnid return %s\n" % rep
 
     def _validate_datapath(self):
         if not self.dove_switch_app.switch:
