@@ -47,13 +47,13 @@ sites = []
 site = { 'name' : 'site1',
          'tenant_id' : tenant1['id'],
          'fa_url' : fa_url1,
-         'site_proxy' : [{'ip' : '10.0.2.4', 'port' : 1234}]
+         'site_proxy' : [{'ip' : '10.0.2.8', 'port' : 1234}]
          }
 sites.append(site)
 site = { 'name' : 'site2',
          'tenant_id' : tenant2['id'],
          'fa_url' : fa_url2,
-         'site_proxy' : [{'ip' : '10.0.2.6', 'port' : 1234}]
+         'site_proxy' : [{'ip' : '10.0.2.9', 'port' : 1234}]
          }
 sites.append(site)
 print "Update tenant's site table %s\n" % sites
