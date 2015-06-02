@@ -30,7 +30,7 @@ class OvnController(FaSdnController):
         # add port to ovnnb
         os.system('ovn-nbctl -d %s lport-add neutron-%s %s' %
                   (self.CONF.netfa.ovsdb_connection, req.vNID, port_uuid))
-        os.system('ovn-nbctl -d %s lport-set-mace %s unknown' %
+        os.system('ovn-nbctl -d %s lport-set-macs %s unknown' %
                   (self.CONF.netfa.ovsdb_connection, port_uuid))
         print "Added lport %s to switch neutron-%s\n" % (port_uuid, req.vNID)
         
