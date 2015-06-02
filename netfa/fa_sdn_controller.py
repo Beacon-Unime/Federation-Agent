@@ -59,8 +59,8 @@ class FaSdnController(app_manager.RyuApp):
         global controllerName
         controllerName = self.get_module_name()
         self.CONF.register_opts([
-            cfg.StrOpt('fa_br_name', default='br-fa'),
-            cfg.StrOpt('controller_br_name', default='br-int')
+            cfg.StrOpt('fa_br_name', default=None),
+            cfg.StrOpt('controller_br_name', default=None)
             ], 'netfa')
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -93,5 +93,5 @@ class FaSdnController(app_manager.RyuApp):
 
     """ Controler specific virtual network registration returns name of created VNID port on FA bridge"""
     @abstractmethod
-    def regiter_vnid(self, EventRegisterVNIDReq):
+    def register_vnid(self, EventRegisterVNIDReq):
         pass

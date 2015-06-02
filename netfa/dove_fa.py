@@ -38,7 +38,7 @@ from netfa.fa_sdn_controller import FaSdnController
 from jsonschema import validate
 
 dove_fa_api_instance_name = 'dove_fa_api_app'
-url_tenants = '/dove-fa/tenants'
+url_tenants = '/net-fa/tenants'
 
 TENANTID_PATTERN = r'[0-9a-f]{32}'
 
@@ -55,9 +55,9 @@ class DoveFaSwitch(app_manager.RyuApp):
         wsgi = kwargs['wsgi']
         wsgi.register(DoveFaApi, {dove_fa_api_instance_name : self})
         self.CONF.register_opts([
-            cfg.StrOpt('my_site', default='site1'),
-            cfg.StrOpt('fa_br_name', default='br-fa'),
-            cfg.StrOpt('fa_tun_name', default='fa-tun')],
+            cfg.StrOpt('my_site', default=None),
+            cfg.StrOpt('fa_br_name', default=None),
+            cfg.StrOpt('fa_tun_name', default=None)],
             'netfa')
 
 
@@ -669,14 +669,14 @@ class DoveFaApi(ControllerBase):
 
                 self.do_handshake(site, version)
 
-    @route('dove-fa', url_tenants, methods=['GET'])
+    @route('net-fa', url_tenants, methods=['GET'])
     def list_tenants(self, req, **kwargs):
         body = json.dumps(tenants)
         return Response(content_type='application/json', body=body)
 
     # implicitly create sites table with local site (single column)
     #  and empty network table
-    @route('dove-fa', url_tenants, methods=['POST'])
+    @route('net-fa', url_tenants, methods=['POST'])
     def create_tenant(self, req, **kwargs):
         tenant = json.loads(req.body)
         validate(tenant, tenant_schema)
@@ -689,7 +689,7 @@ class DoveFaApi(ControllerBase):
         body = json.dumps(tenant)
         return Response(content_type='application/json', body=body)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}', methods=['GET'],
+    @route('net-fa', url_tenants + '/{tenant_id}', methods=['GET'],
            requirements= {'tenant_id' : TENANTID_PATTERN })
     def get_tenant(self, req, tenant_id, **kwargs):
 
@@ -699,7 +699,7 @@ class DoveFaApi(ControllerBase):
         else:
             return Response(content_type='application/json', status = 500)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}', methods=['DELETE'],
+    @route('net-fa', url_tenants + '/{tenant_id}', methods=['DELETE'],
            requirements= {'tenant_id' : TENANTID_PATTERN })
     def delete_tenant(self, req, tenant_id, **kwargs):
 
@@ -714,7 +714,7 @@ class DoveFaApi(ControllerBase):
         else:
             return Response(content_type='application/json', status = 500)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/sites', methods=['PUT'],
+    @route('net-fa', url_tenants + '/{tenant_id}/sites', methods=['PUT'],
            requirements= {'tenant_id' : TENANTID_PATTERN })
     def update_tenant_sites(self, req, tenant_id, **kwargs):
         print "tenanat id %s site_table %s\n" % (tenant_id, tenants_site_tables[tenant_id])
@@ -731,7 +731,7 @@ class DoveFaApi(ControllerBase):
         body = json.dumps(table)
         return Response(content_type='application/json', body=body)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/sites', methods=['DELETE'],
+    @route('net-fa', url_tenants + '/{tenant_id}/sites', methods=['DELETE'],
            requirements= {'tenant_id' : TENANTID_PATTERN })
     def delete_tenant_sites(self, req, tenant_id, **kwargs):
 
@@ -744,7 +744,7 @@ class DoveFaApi(ControllerBase):
         body = json.dumps(site_table)
         return Response(content_type='application/json')
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/sites', methods=['GET'],
+    @route('net-fa', url_tenants + '/{tenant_id}/sites', methods=['GET'],
            requirements= {'tenant_id' : TENANTID_PATTERN })
     def get_tenant_sites(self, req, tenant_id, **kwargs):
 
@@ -756,7 +756,7 @@ class DoveFaApi(ControllerBase):
         body = json.dumps(site_table)
         return Response(content_type='application/json', body=body)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/networks_table',
+    @route('net-fa', url_tenants + '/{tenant_id}/networks_table',
            methods=['PUT'], requirements= {'tenant_id' : TENANTID_PATTERN })
     def update_net_table(self, req, tenant_id, **kwargs):
 
@@ -784,7 +784,7 @@ class DoveFaApi(ControllerBase):
         body = json.dumps(table)
         return Response(content_type='application/json', body=body)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/networks_table',
+    @route('net-fa', url_tenants + '/{tenant_id}/networks_table',
            methods=['GET'], requirements= {'tenant_id' : TENANTID_PATTERN })
     def get_net_table(self, req, tenant_id, **kwargs):
 
@@ -796,7 +796,7 @@ class DoveFaApi(ControllerBase):
         body = json.dumps(net_table)
         return Response(content_type='application/json', body=body)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/networks_table',
+    @route('net-fa', url_tenants + '/{tenant_id}/networks_table',
            methods=['DELETE'], requirements= {'tenant_id' : TENANTID_PATTERN })
     def delete_net_table(self, req, tenant_id, **kwargs):
 
@@ -809,7 +809,7 @@ class DoveFaApi(ControllerBase):
         body = json.dumps(net_table)
         return Response(content_type='application/json', body=body)
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/handshake',
+    @route('net-fa', url_tenants + '/{tenant_id}/handshake',
            methods=['POST'], requirements= {'tenant_id' : TENANTID_PATTERN })
     def hand_shake(self, req, tenant_id, **kwargs):
 
@@ -839,7 +839,7 @@ class DoveFaApi(ControllerBase):
 
         return Response(content_type='application/json',status = 500, body="Handshake failed: Src site was not found.")
 
-    @route('dove-fa', url_tenants + '/{tenant_id}/location-req',
+    @route('net-fa', url_tenants + '/{tenant_id}/location-req',
            methods=['POST'], requirements= {'tenant_id' : TENANTID_PATTERN })
     def location_request(self, req, tenant_id, **kwargs):
 

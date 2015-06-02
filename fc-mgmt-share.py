@@ -66,8 +66,8 @@ print "tenant1 = %s\ntenant2 = %s\n" % (tenant1, tenant2)
 auth = HTTPBasicAuth(username, password)
 headers = {'content-type': 'application/json', 'Accept': 'application/json', 'charsets': 'utf-8'}
 
-r = requests.post('http://' + fa_url1 + '/dove-fa/tenants', headers=headers, auth=auth, data=json.dumps(tenant1))
-r = requests.post('http://' + fa_url2 + '/dove-fa/tenants', headers=headers, auth=auth, data=json.dumps(tenant2))
+r = requests.post('http://' + fa_url1 + '/net-fa/tenants', headers=headers, auth=auth, data=json.dumps(tenant1))
+r = requests.post('http://' + fa_url2 + '/net-fa/tenants', headers=headers, auth=auth, data=json.dumps(tenant2))
 
 print "Create tenant sites table\n"
 sites = []
@@ -84,9 +84,9 @@ site = { 'name' : CONF.mgmt.site2_name,
          }
 sites.append(site)
 print "Update tenant's site table %s\n" % sites
-r = requests.put('http://' + fa_url1 + '/dove-fa/tenants/' + tenant1['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
+r = requests.put('http://' + fa_url1 + '/net-fa/tenants/' + tenant1['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
 print "Created sites table on site1: %s\n" % r.text
-r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
+r = requests.put('http://' + fa_url2 + '/net-fa/tenants/' + tenant2['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
 print "Created sites table on site2: %s\n" % r.text
 
 print 'Create network table id are strings\n'
@@ -120,13 +120,13 @@ for n1 in networks1['networks']:
         net_table.append(net)
 
 print "Update net table on sites:\n %s" % net_table
-r = requests.put('http://' + fa_url1 + '/dove-fa/tenants/' + tenant1['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table} ))
+r = requests.put('http://' + fa_url1 + '/net-fa/tenants/' + tenant1['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table} ))
 
 print "Update net table returned %s %s\n" %(r.status_code, r.text)
 time.sleep(1)
 
-r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table}))
+r = requests.put('http://' + fa_url2 + '/net-fa/tenants/' + tenant2['id'] + '/networks_table', headers=headers, auth=auth, data=json.dumps({'version' : 111, 'table' : net_table}))
 
-r = requests.get('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/networks_table')
+r = requests.get('http://' + fa_url2 + '/net-fa/tenants/' + tenant2['id'] + '/networks_table')
 
 print "Configured net table:\n %s" % r.text
