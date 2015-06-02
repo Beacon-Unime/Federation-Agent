@@ -78,10 +78,8 @@ class FaSdnController(app_manager.RyuApp):
 
     @set_ev_cls(EventRegisterVNIDReq)
     def register_vnid_handler(self, req):
-        print "Register vnid %s\n" % req.vNID
         port = self.register_vnid(req)
-        print "send reply with %s\n" % port
-        
+
         self.reply_to_request(req, EventRegisterVNIDReply(req.src, req.vNID, req.pIP, port))
 
     """ API to communicate with the specific cloud controller """

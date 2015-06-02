@@ -593,10 +593,8 @@ class DoveFaApi(ControllerBase):
         pip = self.dove_switch_app.switch['datapath'].address[0]
 
         for vnid in table['table']:
-            print "Register %s in controller\n" % vnid
+            logging.info("Register %s in controller" % vnid)
             rep = self.dove_switch_app.send_request(EventRegisterVNIDReq(vnid, pip))
-
-            print "Got reply PPPP %s port %s\n" % (rep,rep.port)
 
             if rep.port:
                 print "register vnid return %s\n" % rep
@@ -717,7 +715,7 @@ class DoveFaApi(ControllerBase):
     @route('net-fa', url_tenants + '/{tenant_id}/sites', methods=['PUT'],
            requirements= {'tenant_id' : TENANTID_PATTERN })
     def update_tenant_sites(self, req, tenant_id, **kwargs):
-        print "tenanat id %s site_table %s\n" % (tenant_id, tenants_site_tables[tenant_id])
+
         if tenant_id in tenants_site_tables:
             site_table = tenants_site_tables[tenant_id]
         else:
@@ -827,7 +825,7 @@ class DoveFaApi(ControllerBase):
             raise RyuException("Handshake failed: Version mismatch %s %s" %
                                (msg['version'], net_table['version']))
 
-        print "DO HANDSHAKE"
+        logging.debug("DO HANDSHAKE")
 
         for site in tenants_site_tables[tenant_id]:
             if site['name'] == msg['src_site']:
