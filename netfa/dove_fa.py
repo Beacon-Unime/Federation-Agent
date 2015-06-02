@@ -57,8 +57,9 @@ class DoveFaSwitch(app_manager.RyuApp):
         self.CONF.register_opts([
             cfg.StrOpt('my_site', default='site1'),
             cfg.StrOpt('fa_br_name', default='br-fa'),
-            cfg.StrOpt('fa_tun_name', default='fa-tun')
-            ])
+            cfg.StrOpt('fa_tun_name', default='fa-tun')],
+            'netfa')
+
 
 #     def rest_client(self, switch):
 #         print ("Enter rest %s" % switch)
@@ -139,11 +140,11 @@ class DoveFaSwitch(app_manager.RyuApp):
         print ev.msg
         print datapath
         for port_no,port in ev.msg.ports.items():
-            if port.name == self.CONF.fa_br_name:
+            if port.name == self.CONF.netfa.fa_br_name:
                 # We found our datapath
                 print "Found %s\n" % port.name
                 self.switch = {'datapath': datapath}
-            if port.name == self.CONF.fa_tun_name:
+            if port.name == self.CONF.netfa.fa_tun_name:
                 # We found our fa tunnel port
                 print "Found %s tunnel\n" % port.name
                 self.tunnel_port = port
@@ -239,7 +240,7 @@ class DoveFaSwitch(app_manager.RyuApp):
         for tenant_id,net_table in tenants_net_tables.items():
             if vnid in net_table['table']:
                 for net in net_table['table'][vnid]:
-                    if net['site_name'] != self.CONF.my_site:
+                    if net['site_name'] != self.CONF.netfa.my_site:
                         self._send_location_req(tenant_id, vnid, vip, net)
                 found = True
                 break
@@ -472,7 +473,7 @@ class DoveFaApi(ControllerBase):
     def __init__(self, req, link, data, **config):
         super(DoveFaApi, self).__init__(req, link, data, **config)
         self.dove_switch_app = data[dove_fa_api_instance_name]
-        self.my_site = self.dove_switch_app.CONF.my_site
+        self.my_site = self.dove_switch_app.CONF.netfa.my_site
         #hub.spawn(self._vnid_registration)
 
     def _vnid_registration(self):
@@ -716,6 +717,7 @@ class DoveFaApi(ControllerBase):
     @route('dove-fa', url_tenants + '/{tenant_id}/sites', methods=['PUT'],
            requirements= {'tenant_id' : TENANTID_PATTERN })
     def update_tenant_sites(self, req, tenant_id, **kwargs):
+        print "tenanat id %s site_table %s\n" % (tenant_id, tenants_site_tables[tenant_id])
         if tenant_id in tenants_site_tables:
             site_table = tenants_site_tables[tenant_id]
         else:

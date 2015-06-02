@@ -3,3 +3,4 @@ build/
 net_fa.egg-info/
 *.pyc
 ovn-uuid
+netfa.conf

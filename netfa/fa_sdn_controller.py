@@ -61,7 +61,7 @@ class FaSdnController(app_manager.RyuApp):
         self.CONF.register_opts([
             cfg.StrOpt('fa_br_name', default='br-fa'),
             cfg.StrOpt('controller_br_name', default='br-int')
-            ])
+            ], 'netfa')
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -69,7 +69,7 @@ class FaSdnController(app_manager.RyuApp):
         print ev.msg
         print datapath
         for port_no,port in ev.msg.ports.items():
-            if port.name == self.CONF.fa_br_name:
+            if port.name == self.CONF.netfa.fa_br_name:
                 # We found our datapath
                 print "Found in controller fa bridge %s\n" % port.name
                 self.tunnel_port = port

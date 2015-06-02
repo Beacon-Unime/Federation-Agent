@@ -1,19 +1,49 @@
 from neutronclient.neutron import client as nclient
 from keystoneclient.v2_0 import client as kclient
 from requests.auth import HTTPBasicAuth
+from oslo.config import cfg
 import requests
 import json
 import time
 
-username='admin'
-password='password'
-tenant_name='demo'
-site1='10.0.2.4'
-site2='10.0.2.6'
-auth_url1='http://' + site1 + ':5000/v2.0'
-auth_url2='http://' + site2 + ':5000/v2.0'
-fa_url1='10.0.2.8:4567'
-fa_url2='10.0.2.9:4567'
+opt_group = cfg.OptGroup(name='mgmt',
+                         title='A shim fa mgmt layer')
+
+fa_opts = [
+    cfg.StrOpt('username', default='admin'),
+    cfg.StrOpt('password', default='password'),
+    cfg.StrOpt('tenant_name', default=None),
+    cfg.StrOpt('site1_ip', default=None),
+    cfg.StrOpt('site2_ip', default=None),
+    cfg.StrOpt('site1_name', default=None),
+    cfg.StrOpt('site2_name', default=None),
+    cfg.StrOpt('fa1_ip', default=None),
+    cfg.StrOpt('fa2_ip', default=None),
+    cfg.IntOpt('fa1_port', default=4789),
+    cfg.IntOpt('fa2_port', default=4789),
+    cfg.StrOpt('fa1_dp_ip', default=None),
+    cfg.StrOpt('fa2_dp_ip', default=None),
+    cfg.IntOpt('fa1_dp_port', default=4789),
+    cfg.IntOpt('fa2_dp_port', default=4789)
+]
+
+CONF = cfg.CONF
+CONF.register_group(opt_group)
+CONF.register_opts(fa_opts, 'mgmt')
+
+CONF(default_config_files=['netfa.conf'])
+
+print CONF.mgmt.username
+username=CONF.mgmt.username
+password=CONF.mgmt.password
+tenant_name=CONF.mgmt.tenant_name
+site1=CONF.mgmt.site1_ip
+site2=CONF.mgmt.site2_ip
+print "HEre is %s\n" % site1
+auth_url1='http://' + CONF.mgmt.site1_ip + ':5000/v2.0'
+auth_url2='http://' + CONF.mgmt.site2_ip + ':5000/v2.0'
+fa_url1=CONF.mgmt.fa1_ip + ':' + str(CONF.mgmt.fa1_port)
+fa_url2=CONF.mgmt.fa2_ip + ':' + str(CONF.mgmt.fa2_port)
 
 def get_tenant(auth_url):
     keystone = kclient.Client(username=username, password=password, tenant_name=tenant_name, auth_url=auth_url)
@@ -41,21 +71,23 @@ r = requests.post('http://' + fa_url2 + '/dove-fa/tenants', headers=headers, aut
 
 print "Create tenant sites table\n"
 sites = []
-site = { 'name' : 'site1',
+site = { 'name' : CONF.mgmt.site1_name,
          'tenant_id' : tenant1['id'],
          'fa_url' : fa_url1,
-         'site_proxy' : [{'ip' : '10.0.2.8', 'port' : 1234}]
+         'site_proxy' : [{'ip' : CONF.mgmt.fa1_dp_ip, 'port' : CONF.mgmt.fa1_dp_port}]
          }
 sites.append(site)
-site = { 'name' : 'site2',
+site = { 'name' : CONF.mgmt.site2_name,
          'tenant_id' : tenant2['id'],
          'fa_url' : fa_url2,
-         'site_proxy' : [{'ip' : '10.0.2.9', 'port' : 1234}]
+         'site_proxy' : [{'ip' : CONF.mgmt.fa2_dp_ip, 'port' : CONF.mgmt.fa2_dp_port}]
          }
 sites.append(site)
 print "Update tenant's site table %s\n" % sites
 r = requests.put('http://' + fa_url1 + '/dove-fa/tenants/' + tenant1['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
+print "Created sites table on site1: %s\n" % r.text
 r = requests.put('http://' + fa_url2 + '/dove-fa/tenants/' + tenant2['id'] + '/sites', headers=headers, auth=auth, data=json.dumps(sites))
+print "Created sites table on site2: %s\n" % r.text
 
 print 'Create network table id are strings\n'
 net_table=[]
@@ -73,13 +105,13 @@ for n1 in networks1['networks']:
             print 'we have a match %s\n' % n1
             net.append({ 'name' : n1['name'],
                          'vnid' : n1['id'],
-                         'site_name' : "site1",
+                         'site_name' : CONF.mgmt.site1_name,
                          'tenant_id' : tenant1['id']
                          }
                        )
             net.append({ 'name' : n2['name'],
                          'vnid' : n2['id'],
-                         'site_name' : "site2",
+                         'site_name' : CONF.mgmt.site2_name,
                          'tenant_id' : tenant2['id']
                          }
                        )
