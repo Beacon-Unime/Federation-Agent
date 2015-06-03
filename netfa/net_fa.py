@@ -37,23 +37,23 @@ from netfa.fa_sdn_controller import EventLocUpdateReq
 from netfa.fa_sdn_controller import FaSdnController
 from jsonschema import validate
 
-dove_fa_api_instance_name = 'dove_fa_api_app'
+net_fa_api_instance_name = 'net_fa_api_app'
 url_tenants = '/net-fa/tenants'
 
 TENANTID_PATTERN = r'[0-9a-f]{32}'
 
-class DoveFaSwitch(app_manager.RyuApp):
+class NetFaSwitch(app_manager.RyuApp):
 
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION, ofproto_v1_2]
     _CONTEXTS = { 'wsgi': WSGIApplication }
     _EVENTS=[EventRegisterVNIDReq]
 
     def __init__(self, *args, **kwargs):
-        super(DoveFaSwitch, self).__init__(*args, **kwargs)
+        super(NetFaSwitch, self).__init__(*args, **kwargs)
         self.switch = {}
         self.vsctl = ovs_vsctl.VSCtl('unix:/usr/local/var/run/openvswitch/db.sock')
         wsgi = kwargs['wsgi']
-        wsgi.register(DoveFaApi, {dove_fa_api_instance_name : self})
+        wsgi.register(NetFaApi, {net_fa_api_instance_name : self})
         self.CONF.register_opts([
             cfg.StrOpt('my_site', default=None),
             cfg.StrOpt('fa_br_name', default=None),
@@ -88,7 +88,7 @@ class DoveFaSwitch(app_manager.RyuApp):
                  self.tunnel_port = port
 
         if not self.switch or not self.tunnel_port:
-            raise RyuException("No DOVE FA bridge yet")
+            raise RyuException("No NET FA bridge yet")
 
         logging.info('Found Federation Agent Bridge %s with tunnel port %s',
                      self.CONF.netfa.fa_br_name,
@@ -146,7 +146,7 @@ class DoveFaSwitch(app_manager.RyuApp):
             #rule.set_nw_proto(4) # "ip"
 
             # encap
-            rule.set_tun_id(vnid) # We assume DOVE sends the source VNID in the VXLAN header for now
+            rule.set_tun_id(vnid) # We assume NET sends the source VNID in the VXLAN header for now
 
             # set tunnel key       SET_TUNNEL
             actions.append(dp.ofproto_parser.NXActionSetTunnel(net['vnid']))
@@ -161,7 +161,7 @@ class DoveFaSwitch(app_manager.RyuApp):
             # forward              OUTPUT(PROXY)
             actions.append(dp.ofproto_parser.OFPActionOutput(ofproto.OFPP_IN_PORT))
 
-            logging.debug('Installing outgoing flow for %d:%s=>%s', net['vnid'], vip, reply['pip']['ip'])
+            logging.debug('Set outgoing flow for %d:%s=>%s', net['vnid'], vip, reply['pip']['ip'])
 
             dp.send_flow_mod(
                 rule=rule,
@@ -342,13 +342,13 @@ tenants = {}
 tenants_site_tables = {}
 tenants_net_tables = {}
 
-class DoveFaApi(ControllerBase):
+class NetFaApi(ControllerBase):
     VNID_REGISTER_INTERVAL = 1200
 
     def __init__(self, req, link, data, **config):
-        super(DoveFaApi, self).__init__(req, link, data, **config)
-        self.dove_switch_app = data[dove_fa_api_instance_name]
-        self.my_site = self.dove_switch_app.CONF.netfa.my_site
+        super(NetFaApi, self).__init__(req, link, data, **config)
+        self.net_switch_app = data[net_fa_api_instance_name]
+        self.my_site = self.net_switch_app.CONF.netfa.my_site
 
 #lookup for tenant ID translation for corresponding site
     def _site_tenant(self, site_id, tenant_id):
@@ -387,9 +387,9 @@ class DoveFaApi(ControllerBase):
         return int(hashlib.sha1(uuid).hexdigest(), 16) % (1<<23)
 
     def _add_flows_for_vnid(self, tenant_id, vnid, port):
-        dp = self.dove_switch_app.switch['datapath']
+        dp = self.net_switch_app.switch['datapath']
         ofproto = dp.ofproto
-        tunnel_port = self.dove_switch_app.tunnel_port
+        tunnel_port = self.net_switch_app.tunnel_port
         parser = dp.ofproto_parser
 
         # Outbound flow
@@ -398,7 +398,7 @@ class DoveFaApi(ControllerBase):
 
         # hardware
         command = ovs_vsctl.VSCtlCommand('get', ('Interface', port, 'ofport'))
-        self.dove_switch_app.vsctl.run_command([command])
+        self.net_switch_app.vsctl.run_command([command])
 
         assert len(command.result) == 1
         ofport = command.result[0][0]
@@ -452,7 +452,7 @@ class DoveFaApi(ControllerBase):
         
         # forward              OUTPUT to local SDN controller vnid port
         actions.append(dp.ofproto_parser.OFPActionOutput(ofport))
-        logging.debug('Installing inbound flow for %s(%s)=> local SDN port:%s',
+        logging.debug('Set inbound flow for %s(%s)=> local SDN port:%s',
                       vnid,
                       self._vnid_uuid_to_vnid(vnid),
                       ofport)
@@ -467,12 +467,12 @@ class DoveFaApi(ControllerBase):
             )
 
     def _register_networks(self, table, tenant_id):
-        pip = self.dove_switch_app.switch['datapath'].address[0]
+        pip = self.net_switch_app.switch['datapath'].address[0]
 
         for vnid in table['table']:
             logging.info("Register %s in controller", vnid)
 
-            rep = self.dove_switch_app.send_request(EventRegisterVNIDReq(vnid, pip))
+            rep = self.net_switch_app.send_request(EventRegisterVNIDReq(vnid, pip))
 
             if rep.port:
                 self._add_flows_for_vnid(tenant_id, vnid, rep.port)
@@ -480,14 +480,14 @@ class DoveFaApi(ControllerBase):
                 raise RyuException("Error failed to create port for vnid %s\n" % vnid)
 
     def _validate_datapath(self):
-        if not self.dove_switch_app.switch:
+        if not self.net_switch_app.switch:
             raise RyuException("FA handshake failed: No datapath")
 
     def _process_handshake_req(self, site, tenant_id, msg):
         reply = msg.copy()
         reply['src_site'] = self.my_site
         reply['tenant_id'] = site['tenant_id']
-        reply['tunnel_ip'] = self.dove_switch_app.switch['datapath'].address[0]
+        reply['tunnel_ip'] = self.net_switch_app.switch['datapath'].address[0]
 
         if not site['handshake_state']:
             return (500, "Handshake Error")
@@ -507,7 +507,7 @@ class DoveFaApi(ControllerBase):
     def do_handshake(self, site, version):
         site['handshake_state'] = 'PENDING'
         ipaddr = \
-               self.dove_switch_app.switch['datapath'].address[0]
+               self.net_switch_app.switch['datapath'].address[0]
 
         auth = HTTPBasicAuth('admin', 'admin')
         headers = {'content-type': 'application/json', 'Accept': 'application/json', 'charsets': 'utf-8'}
@@ -724,15 +724,15 @@ class DoveFaApi(ControllerBase):
         logging.debug('Enter location_request with %s', msg)
 
         # send location request to controller
-        reply = self.dove_switch_app.send_request(EventLocationReq(msg['vnid'], str(msg['vip'])))
+        reply = self.net_switch_app.send_request(EventLocationReq(msg['vnid'], str(msg['vip'])))
 
         # XXX return error code
         if reply.vIP == "0.0.0.0":
             return Response(content_type='application/json', status = 500)
 
         # set incoming flow in the datapath
-        dp = self.dove_switch_app.switch['datapath']
-        tunnel_port = self.dove_switch_app.tunnel_port
+        dp = self.net_switch_app.switch['datapath']
+        tunnel_port = self.net_switch_app.tunnel_port
 
         rule = nx_match.ClsRule()
         actions = []
@@ -789,7 +789,7 @@ class DoveFaApi(ControllerBase):
                  "vip" : msg['vip'],
                  "vmac" : reply.vMAC,
                  "tenant_id" : msg['src_tenant_id'],
-                 "pip" : { "ip" : self.dove_switch_app.switch['datapath'].address[0] }
+                 "pip" : { "ip" : self.net_switch_app.switch['datapath'].address[0] }
                  }
 
         body = json.dumps(body)

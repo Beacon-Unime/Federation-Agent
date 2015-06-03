@@ -18,8 +18,13 @@ Quick Start
 ===========
 % git clone <net-fa Git repository>
 % cd net-fa; python ./setup.py install
-% sudo ryu-manager --verbose --wsapi-port=4567 --ofp-tcp-listen-port=1234 --config-file=./netfa.conf ./netfa/dove_fa.py <file contains a class derived from FaSdnController e.g ./netfa/fa_ovn_controller.py>
 
-Ryu-manager runs 2 Ryu applications dove_fa.py that implements all the rest 
+If you run over OVN you will need to run setup-ovs.sh:
+    % sudo setup-ovs.sh <host_ip> <ovn_db_ip>
+
+% sudo ryu-manager --verbose --wsapi-port=4567 --ofp-tcp-listen-port=1234 --config-file=./netfa.conf ./netfa/net_fa.py <file contains a class derived from FaSdnController e.g ./netfa/fa_ovn_controller.py>
+
+Ryu-manager runs 2 Ryu applications net_fa.py that implements all the REST 
 APIs and controlling the FA datapath and a class that implements 
-FaSdnController (e.g FaOvnController)
+FaSdnController to communicate with teh specific SDN implementation 
+(e.g FaOvnController)
