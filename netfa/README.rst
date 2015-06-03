@@ -14,6 +14,9 @@ If you want to Net-fa to work with ypur own SDN implementation, take a look
 in FaOvnController as a reference implementation and write a class that is
 dereived from the abstract class FaSdnController.
 
+Net-FA OVN implementatiopn was tested on a Fedora21 but should work on any
+Linux distribution with kernel>=3.18 (Geneve support)
+
 Quick Start
 ===========
 % git clone <net-fa Git repository>
