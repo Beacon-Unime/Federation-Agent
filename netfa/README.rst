@@ -22,9 +22,18 @@ Quick Start
 If you run over OVN you will need to run setup-ovs.sh:
     % sudo setup-ovs.sh <host_ip> <ovn_db_ip>
 
+Copy and edit netfa.conf file:
+% cp netfa.conf.sample netfa.conf
+( Edit netfa.conf...)
+
 % sudo ryu-manager --verbose --wsapi-port=4567 --ofp-tcp-listen-port=1234 --config-file=./netfa.conf ./netfa/net_fa.py <file contains a class derived from FaSdnController e.g ./netfa/fa_ovn_controller.py>
 
 Ryu-manager runs 2 Ryu applications net_fa.py that implements all the REST 
 APIs and controlling the FA datapath and a class that implements 
 FaSdnController to communicate with teh specific SDN implementation 
 (e.g FaOvnController)
+
+We have a script for sharing networks of 2 cloude according to the netfa.mgmt 
+configuration via Net-FA REST API:
+
+% python ./fc-mgmt-share.py
