@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import logging
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER
@@ -66,12 +67,11 @@ class FaSdnController(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
-        print ev.msg
-        print datapath
+
         for port_no,port in ev.msg.ports.items():
             if port.name == self.CONF.netfa.fa_br_name:
                 # We found our datapath
-                print "Found in controller fa bridge %s\n" % port.name
+
                 self.tunnel_port = port
                 self.fa_switch = {'datapath': datapath}
                 break

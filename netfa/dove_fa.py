@@ -60,65 +60,6 @@ class DoveFaSwitch(app_manager.RyuApp):
             cfg.StrOpt('fa_tun_name', default=None)],
             'netfa')
 
-
-#     def rest_client(self, switch):
-#         print ("Enter rest %s" % switch)
-#         #switch.dcs = self.get_dcs() XXX
-
-#         while True:
-#             if len(switch.switches) < 1:
-#                 raise RyuException(msg="FA needs br-fa datapath")
-
-#             print "Woke up"
-#             for datapath_id,sw in switch.switches.items():
-#                 print datapatth_id
-#                 print switch
-#                 print "\n"
-
-#                 if sw['dmc'] == None:
-#                     dmc = self.dmc_registration(datapath_id)
-#                     print dmc
-#                     if dmc:
-#                         sw['dmc'] = dmc
-
-#                 if sw['dmc'] != None:
-#                     print sw['dmc']
-#                     self.dmc_hb(sw['dmc'])
-
-#             hub.sleep(self.DMC_HB_INTERVAL)
-
-#     def dmc_hb(self, dmc):
-#         auth = HTTPBasicAuth('admin', 'admin')
-#         headers = {'content-type': 'application/json', 'Accept': 'application/json', 'charsets': 'utf-8'}
-#         r = requests.put('http://' + self.CONF.dmc_url + '/controller/sb/v2/opendove/odmc/switch/%s' % dmc['id'] , headers=headers, auth=auth,
-#                           data=json.dumps( {"id": str(dmc['id']),
-#                                             "name": str(dmc['name']),
-#                                             "tunnelip": str(dmc['tunnelip']),
-#                                             "managementip": str(dmc['managementip'])}))
-
-#     def dmc_registration(self, id):
-#         auth = HTTPBasicAuth('admin', 'admin')
-#         headers = {'content-type': 'application/json', 'Accept': 'application/json', 'charsets': 'utf-8'}
-#         r = requests.post('http://' + self.CONF.dmc_url + '/controller/sb/v2/opendove/odmc/switch', headers=headers, auth=auth,
-#                           data=json.dumps({'id': 'null', 'name': str(id), 'tunnelip': "127.0.0.1", 'managementip': '127.0.0.1'}))
-
-#         if int(r.status_code) == 201:
-#             sw = r.json()
-#             return sw
-#         else:
-#             return None
-
-#     def get_dcs(self):
-#         auth = HTTPBasicAuth('admin', 'admin')
-#         headers = {'content-type': 'application/json', 'Accept': 'application/json', 'charsets': 'utf-8'}
-#         r = requests.get('http://' + self.CONF.dmc_url + '/controller/sb/v2/opendove/odmc/odcs/leader', headers=headers, auth=auth)
-
-#         if(r.status_code != 200):
-#             raise RyuException(msg="Error getting DCS address")
-
-#         res = json.loads(r.text)
-#         return {'ip': res['ip'], 'port': res['dcs_raw_service_port']}
-
     @set_ev_cls(ofp_event.EventOFPStateChange)
     def state_change_handler(self, ev):
 
@@ -137,20 +78,21 @@ class DoveFaSwitch(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
-        print ev.msg
-        print datapath
+
         for port_no,port in ev.msg.ports.items():
             if port.name == self.CONF.netfa.fa_br_name:
                 # We found our datapath
-                print "Found %s\n" % port.name
                 self.switch = {'datapath': datapath}
             if port.name == self.CONF.netfa.fa_tun_name:
                 # We found our fa tunnel port
-                print "Found %s tunnel\n" % port.name
-                self.tunnel_port = port
+                 self.tunnel_port = port
 
-        if not self.switch:
+        if not self.switch or not self.tunnel_port:
             raise RyuException("No DOVE FA bridge yet")
+
+        logging.info('Found Federation Agent Bridge %s with tunnel port %s',
+                     self.CONF.netfa.fa_br_name,
+                     self.CONF.netfa.fa_tun_name)
 
     def _find_url(self, tenant_id, name):
         for site in tenants_site_tables[tenant_id]:
@@ -255,74 +197,7 @@ class DoveFaSwitch(app_manager.RyuApp):
         logging.info("Packet in arrived - no flow in datapath")
 
         return
-        #raise RyuException("Packet in arrived %s-->%s- no flow in datapath" % (packet[1].src, packet[1].dst))
-#         in_port = ev.msg.data.match.in_port
-#         if in_port < 0: return
 
-#         packet = Packet(ev.msg.data.frame[2:])
-#         if len(packet) < 1: return
-
-#         dp = ev.msg.datapath
-#         ofproto = dp.ofproto
-
-#         vnid = ev.msg.data.match.tun_id
-
-#         actions = []
-
-#         rule = nx_match.ClsRule()
-
-#         # hardware
-#         rule.set_in_port(in_port)
-#         rule.set_dl_type(packet[0].ethertype)
-
-#         # ip
-#         rule.set_nw_src(ipv4_text_to_int(packet[1].src))
-#         rule.set_nw_dst(ipv4_text_to_int(packet[1].dst))
-#         #rule.set_nw_proto(packet[1].proto)
-#         rule.set_nw_proto(4) # "ip"
-
-#         # encap
-#         rule.set_tun_id(vnid)
-
-#         # set tunnel key       SET_TUNNEL
-#         actions.append(dp.ofproto_parser.NXActionSetTunnel(1234))
-
-#         # set tunnel dst pIP   REG_LOAD
-#         actions.append(dp.ofproto_parser.NXActionRegLoad(
-#             0x1f,        # ofs_nbits (ofs < 6 | nbits - 1)
-#             0x014004,    # dst
-#             ipv4_text_to_int("1.2.3.4")
-#             ))
-
-#         # forward              OUTPUT(PROXY)
-#         actions.append(dp.ofproto_parser.OFPActionOutput(ofproto.OFPP_IN_PORT))
-
-#         logging.debug('installing proxy flow for %s:%d=>%s:%d', packet[1].src, vnid, packet[1].dst, 1234)
-
-#         dp.send_flow_mod(
-#             rule=rule,
-#             cookie=0,
-#             command=ofproto.OFPFC_ADD,
-#             idle_timeout=60,
-#             hard_timeout=600,
-#             actions=actions
-#             )
-
-#         if ev.msg.data.buffer_id != ofproto_v1_0.OFPP_MAX:
-
-#             logging.info('forcing out buffered packet')
-
-#             out = dp.ofproto_parser.OFPPacketOut(
-#                 datapath=dp, buffer_id=ev.msg.data.buffer_id,
-#                 in_port=in_port, actions=actions)
-
-#             dp.send_msg(out)
-
-#         for item in packet:
-#             if isinstance(item, str): break
-#             print item
-
-# REST API schema
 tenant_schema = { "type" : "object",
                   "properties" : {
                       "id" :  {
@@ -474,15 +349,6 @@ class DoveFaApi(ControllerBase):
         super(DoveFaApi, self).__init__(req, link, data, **config)
         self.dove_switch_app = data[dove_fa_api_instance_name]
         self.my_site = self.dove_switch_app.CONF.netfa.my_site
-        #hub.spawn(self._vnid_registration)
-
-    def _vnid_registration(self):
-        while True:
-            print "sleep"
-            hub.sleep(self.VNID_REGISTER_INTERVAL)
-            for table in tenants_net_tables.values():
-
-                self._register_networks(table)
 
 #lookup for tenant ID translation for corresponding site
     def _site_tenant(self, site_id, tenant_id):
@@ -494,7 +360,7 @@ class DoveFaApi(ControllerBase):
         raise RyuException("Tenant translation failed")
 
 #lookup for network ID translation for specific VN ID
-    def _site_network(self, site_name, tenant_id, network_id):
+    def _get_sites_vnid(self, site_name, tenant_id, network_id):
         if tenant_id in tenants_net_tables:
             net_table = tenants_net_tables[tenant_id]
             net_list =  net_table['table'][network_id]
@@ -526,7 +392,7 @@ class DoveFaApi(ControllerBase):
         tunnel_port = self.dove_switch_app.tunnel_port
         parser = dp.ofproto_parser
 
-        # outgoing flow
+        # Outbound flow
         actions = []
         rule = nx_match.ClsRule()
 
@@ -539,23 +405,33 @@ class DoveFaApi(ControllerBase):
         
         rule.set_in_port(ofport)
 
+        logging.debug("Set outbound flow for vnid %s(%s):",
+                      vnid,
+                      self._vnid_uuid_to_vnid(vnid))
+
         for site in tenants_site_tables[tenant_id]:
-            print "Set flow for ip %s\n" % site['site_proxy'][0]['ip']
             if site['name'] != self.my_site:
-                print "append %s\n" % self._vnid_uuid_to_vnid(self._site_network(site['name'], tenant_id, vnid))
+
+                remote_vnid = self._get_sites_vnid(site['name'], tenant_id, vnid)
+                remote_ip = str(site['site_proxy'][0]['ip'])
+                
                 # set tunnel key       SET_TUNNEL
-                actions.append(dp.ofproto_parser.NXActionSetTunnel(self._vnid_uuid_to_vnid(self._site_network(site['name'], tenant_id, vnid))))
+                actions.append(dp.ofproto_parser.NXActionSetTunnel(
+                    self._vnid_uuid_to_vnid(remote_vnid)))
                 # set tunnel dst pIP   REG_LOAD
                 actions.append(dp.ofproto_parser.NXActionRegLoad(
                     0x1f,        # ofs_nbits (ofs < 6 | nbits - 1)
                     0x014004,    # dst
-                    ipv4_text_to_int(str(site['site_proxy'][0]['ip']))
+                    ipv4_text_to_int(remote_ip)
                     ))
 
                 # forward              OUTPUT(PROXY)
                 actions.append(dp.ofproto_parser.OFPActionOutput(tunnel_port.port_no))
-                logging.debug('Installing outgoing flow for %s=>%s',
-                              self._vnid_uuid_to_vnid(self._site_network(site['name'], tenant_id, vnid)),
+                logging.debug('--------ACTION: vnid:%s(%s)=>site %s:vnid:%s(%s) via tunnel %s',
+                              vnid,
+                              self._vnid_uuid_to_vnid(vnid),
+                              site['name'], remote_vnid,
+                              self._vnid_uuid_to_vnid(remote_vnid),
                               site['site_proxy'][0]['ip'])
 
         res= dp.send_flow_mod(
@@ -566,18 +442,20 @@ class DoveFaApi(ControllerBase):
             hard_timeout=0,
             actions=actions
             )
-        print "result %s\n" % res
-
-        # ingoing flow
+        
+        # Inbound flow
         actions = []
         rule = nx_match.ClsRule()
 
         rule.set_in_port(tunnel_port.port_no)
         rule.set_tun_id(self._vnid_uuid_to_vnid(vnid))
         
-        # forward              OUTPUT(PROXY)
+        # forward              OUTPUT to local SDN controller vnid port
         actions.append(dp.ofproto_parser.OFPActionOutput(ofport))
-        logging.debug('Installing incoming flow for %s=>%sofport', vnid, ofport)
+        logging.debug('Installing inbound flow for %s(%s)=> local SDN port:%s',
+                      vnid,
+                      self._vnid_uuid_to_vnid(vnid),
+                      ofport)
 
         res= dp.send_flow_mod(
             rule=rule,
@@ -587,17 +465,16 @@ class DoveFaApi(ControllerBase):
             hard_timeout=0,
             actions=actions
             )
-        print "result %s\n" % res
 
     def _register_networks(self, table, tenant_id):
         pip = self.dove_switch_app.switch['datapath'].address[0]
 
         for vnid in table['table']:
-            logging.info("Register %s in controller" % vnid)
+            logging.info("Register %s in controller", vnid)
+
             rep = self.dove_switch_app.send_request(EventRegisterVNIDReq(vnid, pip))
 
             if rep.port:
-                print "register vnid return %s\n" % rep
                 self._add_flows_for_vnid(tenant_id, vnid, rep.port)
             else:
                 raise RyuException("Error failed to create port for vnid %s\n" % vnid)
@@ -825,7 +702,7 @@ class DoveFaApi(ControllerBase):
             raise RyuException("Handshake failed: Version mismatch %s %s" %
                                (msg['version'], net_table['version']))
 
-        logging.debug("DO HANDSHAKE")
+        logging.info("Start jandshake for tenant %s", tenant_id)
 
         for site in tenants_site_tables[tenant_id]:
             if site['name'] == msg['src_site']:

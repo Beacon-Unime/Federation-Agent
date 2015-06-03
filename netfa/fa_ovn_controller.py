@@ -1,5 +1,6 @@
 import uuid
 import os
+import logging
 from netfa.fa_sdn_controller import FaSdnController
 from netfa.fa_sdn_controller import EventRegisterVNIDReq
 from ryu.controller.handler import MAIN_DISPATCHER
@@ -23,31 +24,33 @@ class OvnController(FaSdnController):
     def register_vnid(self, req):
 
         # add patch port on OVN bridge
-        port_name = self._add_patch_port(self.CONF.netfa.controller_br_name, req.vNID, 'fa-br')
+        vnid_ctl_port = self._add_patch_port(self.CONF.netfa.controller_br_name, req.vNID, 'fa-br')
 
-        port_uuid = uuid.uuid4()
+        vnid_ctl_port_uuid = uuid.uuid4()
 
         # add port to ovnnb
         os.system('ovn-nbctl -d %s lport-add neutron-%s %s' %
-                  (self.CONF.netfa.ovsdb_connection, req.vNID, port_uuid))
+                  (self.CONF.netfa.ovsdb_connection, req.vNID, vnid_ctl_port_uuid))
         os.system('ovn-nbctl -d %s lport-set-macs %s unknown' %
-                  (self.CONF.netfa.ovsdb_connection, port_uuid))
-        print "Added lport %s to switch neutron-%s\n" % (port_uuid, req.vNID)
+                  (self.CONF.netfa.ovsdb_connection, vnid_ctl_port_uuid))
+        logging.info('OVN -- Added logical port %s to switch neutron-%s\n',
+                     vnid_ctl_port_uuid, req.vNID)
         
         # set external_ids
-        external_ids = 'iface-id=%s, iface-status=active' % port_uuid
-        command = ovs_vsctl.VSCtlCommand('set', ('Interface', port_name, 'type=patch',  'external_ids=%s' % external_ids))
+        external_ids = 'iface-id=%s, iface-status=active' % vnid_ctl_port_uuid
+        command = ovs_vsctl.VSCtlCommand('set', ('Interface', vnid_ctl_port, 'type=patch',  'external_ids=%s' % external_ids))
         self.vsctl.run_command([command])
 
-        port = self._add_patch_port(self.CONF.netfa.fa_br_name, 'fa-br', req.vNID)
+        vnid_fa_port = self._add_patch_port(self.CONF.netfa.fa_br_name, 'fa-br', req.vNID)
 
-        return port
+        logging.info('Created FA<-->OVN peer ports %s<-->%s',
+                     vnid_ctl_port, vnid_fa_port)
+
+        return vnid_fa_port
 
     def _add_patch_port(self, bridge, base, peer):
         port_name = base + "-" + peer
         peer_name = peer + "-" + base
-
-        print "adding VNID patch port %s on bridge %s" % (port_name, bridge)
 
         command1 = ovs_vsctl.VSCtlCommand('add-port', (bridge, port_name), options=['--may_exist'])
         options = 'peer=%s' % peer_name

@@ -15,8 +15,8 @@ fa_opts = [
     cfg.StrOpt('tenant_name', default=None),
     cfg.StrOpt('site1_ip', default=None),
     cfg.StrOpt('site2_ip', default=None),
-    cfg.StrOpt('site1_name', default=None),
-    cfg.StrOpt('site2_name', default=None),
+    cfg.StrOpt('site1_name', default='site1'),
+    cfg.StrOpt('site2_name', default='site2'),
     cfg.StrOpt('fa1_ip', default=None),
     cfg.StrOpt('fa2_ip', default=None),
     cfg.IntOpt('fa1_port', default=4789),
@@ -33,17 +33,18 @@ CONF.register_opts(fa_opts, 'mgmt')
 
 CONF(default_config_files=['netfa.conf'])
 
-print CONF.mgmt.username
 username=CONF.mgmt.username
 password=CONF.mgmt.password
 tenant_name=CONF.mgmt.tenant_name
 site1=CONF.mgmt.site1_ip
 site2=CONF.mgmt.site2_ip
-print "HEre is %s\n" % site1
+
 auth_url1='http://' + CONF.mgmt.site1_ip + ':5000/v2.0'
 auth_url2='http://' + CONF.mgmt.site2_ip + ':5000/v2.0'
 fa_url1=CONF.mgmt.fa1_ip + ':' + str(CONF.mgmt.fa1_port)
 fa_url2=CONF.mgmt.fa2_ip + ':' + str(CONF.mgmt.fa2_port)
+
+print "Setup federation between %s to %s for tenant %s\n" % (CONF.mgmt.site1_name, CONF.mgmt.site2_name, tenant_name)
 
 def get_tenant(auth_url):
     keystone = kclient.Client(username=username, password=password, tenant_name=tenant_name, auth_url=auth_url)
