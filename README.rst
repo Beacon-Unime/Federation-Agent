@@ -46,9 +46,14 @@ Linux distribution with kernel>=3.18 (Geneve support)
 
 Quick Start
 ===========
+Install the following packages: python-pip, python-dev
+Install Openvswitch
+
 % git clone <net-fa Git repository>
 % git checkout netfa
-% cd net-fa; python ./setup.py install
+% cd net-fa
+% sudo pip install -r requirments.txt
+% sudo python ./setup.py install
 # OR: % cd net-fa; python ./setup.py develop 
 
 # To setup FA ovs datapath:
