@@ -1,5 +1,5 @@
 #!/bin/bash
-OVS_DIR=/home/stack/ovs
+OVS_DIR=/home/ubuntu/ovs
 HOST_IP=$1
 
 echo "host ip = $HOST_IP"

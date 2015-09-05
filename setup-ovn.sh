@@ -1,5 +1,5 @@
 #!/bin/bash
-OVS_DIR=/home/stack/ovs
+OVS_DIR=/home/ubuntu/ovs
 HOST_IP=$1
 OVN_DB_IP=$2
 echo "host ip = $HOST_IP ovn db ip = $OVN_DB_IP"

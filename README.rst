@@ -47,7 +47,7 @@ Linux distribution with kernel>=3.18 (Geneve support)
 Quick Start
 ===========
 Install the following packages: python-pip, python-dev
-Install Openvswitch
+Install Openvswitch from source
 
 % git clone <net-fa Git repository>
 % git checkout netfa
@@ -57,6 +57,7 @@ Install Openvswitch
 # OR: % cd net-fa; python ./setup.py develop 
 
 # To setup FA ovs datapath:
+  Edit OVS_DIR
 % sudo setup-fa-ovs.sh <host_ip>
 
 # If you run over OVN you will need to run setup-ovn.sh:
@@ -65,7 +66,7 @@ Install Openvswitch
 Copy and edit netfa.conf file:
 % cp netfa.conf.sample netfa.conf
 ( Edit netfa.conf...)
-
+udo setup-fa-ovs.sh
 % sudo ryu-manager --verbose --wsapi-port=4567 --ofp-tcp-listen-port=1234 --config-file=./netfa.conf ./netfa/net_fa.py <file contains a class derived from FaSdnController e.g ./netfa/fa_ovn_controller.py>
 
 Ryu-manager runs 2 Ryu applications net_fa.py that implements all the REST 
