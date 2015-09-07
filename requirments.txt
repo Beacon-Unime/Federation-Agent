@@ -2,3 +2,6 @@ ryu
 requests
 simplejson
 jsonschema
+oslo.i18n
+oslo.utils
+cliff

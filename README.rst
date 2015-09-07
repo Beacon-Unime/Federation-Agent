@@ -46,7 +46,7 @@ Linux distribution with kernel>=3.18 (Geneve support)
 
 Quick Start
 ===========
-Install the following packages: python-pip, python-dev
+Install the following packages: python-pip, python-dev python-neutronclient python-keystoneclient
 Install Openvswitch from source
 
 % git clone <net-fa Git repository>
