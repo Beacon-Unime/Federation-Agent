@@ -579,7 +579,7 @@ class NetFaApi(ControllerBase):
         if tenant_id in tenants:
             tenant = tenants[tenant_id]
             del tenants[tenant_id]
-            del tenants_site_talbes[tenant_id]
+            del tenants_site_tables[tenant_id]
             del tenants_net_tables[tenant_id]
 
             body = json.dumps(tenant)
