@@ -29,9 +29,9 @@ class OvnController(FaSdnController):
         vnid_ctl_port_uuid = uuid.uuid4()
 
         # add port to ovnnb
-        os.system('ovn-nbctl -d %s lport-add neutron-%s %s' %
+        os.system('ovn-nbctl --db %s lport-add neutron-%s %s' %
                   (self.CONF.ovn.ovsdb_connection, req.vNID, vnid_ctl_port_uuid))
-        os.system('ovn-nbctl -d %s lport-set-macs %s unknown' %
+        os.system('ovn-nbctl --db %s lport-set-addresses %s unknown' %
                   (self.CONF.ovn.ovsdb_connection, vnid_ctl_port_uuid))
         logging.info('OVN -- Added logical port %s to switch neutron-%s\n',
                      vnid_ctl_port_uuid, req.vNID)

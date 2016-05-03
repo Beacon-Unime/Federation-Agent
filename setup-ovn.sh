@@ -23,7 +23,7 @@ fi
 echo $OVN_UUID > ovn-uuid
 
 sudo ovs-vsctl --no-wait set open_vswitch . external-ids:system-id="$OVN_UUID"
-sudo ovs-vsctl --no-wait set open_vswitch . external-ids:ovn-remote="tcp:$OVN_DB_IP:6640"
+sudo ovs-vsctl --no-wait set open_vswitch . external-ids:ovn-remote="tcp:$OVN_DB_IP:6642"
 sudo ovs-vsctl --no-wait set open_vswitch . external-ids:ovn-bridge="br-int"
 sudo ovs-vsctl --no-wait set open_vswitch . external-ids:ovn-encap-type="geneve"
 sudo ovs-vsctl --no-wait set open_vswitch . external-ids:ovn-encap-ip="$HOST_IP"
