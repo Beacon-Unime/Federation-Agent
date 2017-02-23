@@ -1,6 +1,5 @@
-###########################################################################
-#Copyright  2016 Anna Levin, Liran Shour - IBM 
-#
+########################################################################### 
+#   Copyright 2016 IBM Corp.
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
@@ -47,9 +46,9 @@ class OvnController(FaSdnController):
         vnid_ctl_port_uuid = uuid.uuid4()
 
         # add port to ovnnb
-        os.system('ovn-nbctl --db %s lport-add neutron-%s %s' %
+	os.system('ovn-nbctl --db %s lsp-add neutron-%s %s' %
                   (self.CONF.ovn.ovsdb_connection, req.vNID, vnid_ctl_port_uuid))
-        os.system('ovn-nbctl --db %s lport-set-addresses %s unknown' %
+        os.system('ovn-nbctl --db %s lsp-set-addresses %s unknown' %
                   (self.CONF.ovn.ovsdb_connection, vnid_ctl_port_uuid))
         logging.info('OVN -- Added logical port %s to switch neutron-%s\n',
                      vnid_ctl_port_uuid, req.vNID)
