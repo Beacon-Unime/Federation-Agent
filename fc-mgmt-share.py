@@ -14,6 +14,8 @@
 #   limitations under the License.
 ############################################################################
 from neutronclient.neutron import client as nclient
+from keystoneauth1.identity import v2
+from keystoneauth1 import session
 from keystoneclient.v2_0 import client as kclient
 from requests.auth import HTTPBasicAuth
 from oslo.config import cfg
@@ -62,7 +64,9 @@ fa_url2=CONF.mgmt.fa2_ip + ':' + str(CONF.mgmt.fa2_port)
 print "Setup federation between %s to %s for tenant %s\n" % (CONF.mgmt.site1_name, CONF.mgmt.site2_name, tenant_name)
 
 def get_tenant(auth_url):
-    keystone = kclient.Client(username=username, password=password, tenant_name=tenant_name, auth_url=auth_url)
+    auth = v2.Password(username=username, password=password, tenant_name=tenant_name, auth_url=auth_url)    
+    sess = session.Session(auth=auth)
+    keystone = kclient.Client(session=sess)
     tenants = keystone.tenants.list()
 
     t=None
